@@ -105,7 +105,7 @@ async def tech_zerglings(bot: BotAI, adrenal_glands = False):
 async def tech_banelings(bot: BotAI):
     if bot.structures(UnitTypeId.BANELINGNEST).amount > 0:
         if is_lair_tech_unlocked(bot):
-            await try_queue_research(bot, UnitTypeId.BANELINGNEST, UpgradeId.BANELINGSPEED)
+            await try_queue_research(bot, UnitTypeId.BANELINGNEST, UpgradeId.CENTRIFICALHOOKS)
         else:
             await tech_lair(bot)
     else:
@@ -117,7 +117,7 @@ async def tech_banelings(bot: BotAI):
 async def tech_roaches(bot: BotAI, tunneling_claws = False):
     if bot.structures(UnitTypeId.ROACHWARREN).amount > 0:
         if is_lair_tech_unlocked(bot):
-            await try_queue_research(bot, UnitTypeId.ROACHWARREN, UpgradeId.ROACHSPEED)
+            await try_queue_research(bot, UnitTypeId.ROACHWARREN, UpgradeId.GLIALRECONSTITUTION)
             if tunneling_claws:
                 await try_queue_research(bot, UnitTypeId.ROACHWARREN, UpgradeId.TUNNELINGCLAWS)
                 await try_queue_research(bot, UnitTypeId.HATCHERY, UpgradeId.BURROW)
