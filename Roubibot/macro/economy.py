@@ -2,6 +2,7 @@ from typing import List, Coroutine
 
 from macro import tech
 from sc2.bot_ai import BotAI
+from sc2.game_data import Cost
 from sc2.ids.ability_id import AbilityId
 from sc2.ids.unit_typeid import UnitTypeId
 
@@ -31,7 +32,8 @@ async def expand_eco(bot: BotAI, desired_workers: int, desired_gas: int):
         if not bot.already_pending(UnitTypeId.HATCHERY):
             next_expansion = await bot.get_next_expansion()
             if next_expansion is not None:
-                if bot.can_afford(UnitTypeId.HATCHERY):
+                cost = bot.calculate_cost(UnitTypeId.HATCHERY)
+                if can_afford_while_saving(bot, cost):
                     await bot.build(UnitTypeId.HATCHERY, next_expansion)
                 else:
                     saving_money = True
@@ -41,17 +43,23 @@ async def expand_eco(bot: BotAI, desired_workers: int, desired_gas: int):
     current_queens = bot.units(UnitTypeId.QUEEN).amount + bot.already_pending(UnitTypeId.QUEEN)
     desired_queens = bot.townhalls.amount * 1.5
     if current_queens < desired_queens:
-        if not bot.can_afford(UnitTypeId.QUEEN) or bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount == 0:
-            saving_money = True
-            return # Save or wait for spawning pool
-        idle_townhalls = bot.townhalls.ready.idle
-        if idle_townhalls.amount > 0:
-            idle_townhalls.random.train(UnitTypeId.QUEEN)
+        if bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount == 0:
+            await tech.tech_zerglings(bot)
+        else:
+            cost = bot.calculate_cost(UnitTypeId.QUEEN)
+            if not can_afford_while_saving(bot, cost):
+                saving_money = True
+                return
+            idle_townhalls = bot.townhalls.ready.idle
+            if idle_townhalls.amount > 0:
+                idle_townhalls.random.train(UnitTypeId.QUEEN)
 
     # Build more drones
     current_workers = int(bot.supply_workers + bot.already_pending(UnitTypeId.DRONE))
-    if current_workers < desired_workers and bot.can_afford(UnitTypeId.DRONE):
-        bot.train(UnitTypeId.DRONE)
+    if current_workers < desired_workers:
+        cost = bot.calculate_cost(UnitTypeId.DRONE)
+        if can_afford_while_saving(bot, cost):
+            bot.train(UnitTypeId.DRONE)
 
     # Get 1 extra hatchery if floating minerals
     if bot.minerals > 400 and not bot.already_pending(UnitTypeId.HATCHERY):
@@ -59,7 +67,8 @@ async def expand_eco(bot: BotAI, desired_workers: int, desired_gas: int):
         if not extra_mineral_fields >= 8:
             next_expansion = await bot.get_next_expansion()
             if next_expansion is not None:
-                if bot.can_afford(UnitTypeId.HATCHERY):
+                cost = bot.calculate_cost(UnitTypeId.HATCHERY)
+                if can_afford_while_saving(bot, cost):
                     await bot.build(UnitTypeId.HATCHERY, next_expansion)
 
 async def get_gas(bot: BotAI, desired_gas: int):
@@ -75,7 +84,8 @@ async def get_gas(bot: BotAI, desired_gas: int):
                     continue
         if len(unexploited_geysers) > 0:
             target_geyser = unexploited_geysers[0]
-            if bot.can_afford(UnitTypeId.EXTRACTOR):
+            cost = bot.calculate_cost(UnitTypeId.EXTRACTOR)
+            if can_afford_while_saving(bot, cost):
                 bot.workers.closest_to(target_geyser).build_gas(target_geyser)
             else:
                 saving_money = True
@@ -141,3 +151,12 @@ def reset_saving():
     global saving_money
     saving_money = False
     tech.saving_money = False
+    tech.reset_amount_to_save()
+
+def can_afford_while_saving(bot: BotAI, cost: Cost):
+    extra_minerals = bot.minerals - tech.minerals_to_save
+    if extra_minerals < cost.minerals:
+        global saving_money
+        saving_money = True
+        return False
+    return True

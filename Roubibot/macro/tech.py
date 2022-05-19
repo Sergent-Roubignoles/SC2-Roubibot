@@ -1,8 +1,34 @@
+from typing import Union
+
 from sc2.bot_ai import BotAI
+from sc2.ids.ability_id import AbilityId
 from sc2.ids.unit_typeid import UnitTypeId
 from sc2.ids.upgrade_id import UpgradeId
 
 saving_money = False
+minerals_to_save = 0
+gas_to_save = 0
+techs_to_save_for = []
+
+def reset_amount_to_save():
+    global minerals_to_save
+    global gas_to_save
+    global techs_to_save_for
+
+    minerals_to_save = 0
+    gas_to_save = 0
+    techs_to_save_for = []
+
+def save_for_tech(bot: BotAI, tech: Union[UnitTypeId, UpgradeId, AbilityId]):
+    # Prevent duplicate techs
+    if techs_to_save_for.count(tech) == 0:
+        techs_to_save_for.append(tech)
+        cost = bot.calculate_cost(tech)
+
+        global minerals_to_save
+        global gas_to_save
+        minerals_to_save += cost.minerals
+        gas_to_save += cost.vespene
 
 async def try_build_tech(bot: BotAI, building_id: UnitTypeId, count = 1):
     global saving_money
@@ -12,7 +38,7 @@ async def try_build_tech(bot: BotAI, building_id: UnitTypeId, count = 1):
                 await bot.build(building_id, near=bot.townhalls.closest_to(bot.start_location).position.towards(
                     bot.game_info.map_center, 7))
             else:
-                saving_money = True
+                save_for_tech(bot, building_id)
 
 async def try_queue_research(bot: BotAI, structure_id: UnitTypeId, upgrade_id: UpgradeId):
     global saving_money
@@ -23,7 +49,7 @@ async def try_queue_research(bot: BotAI, structure_id: UnitTypeId, upgrade_id: U
                 if bot.can_afford(upgrade_id):
                     idle_structures.first.research(upgrade_id)
                 else:
-                    saving_money = True
+                    save_for_tech(bot, upgrade_id)
 
 def is_lair_tech_unlocked(bot: BotAI):
     return bot.structures(UnitTypeId.LAIR).ready.amount + bot.structures(
@@ -43,7 +69,7 @@ async def tech_lair(bot: BotAI):
             if bot.can_afford(UnitTypeId.LAIR):
                 starting_base.train(UnitTypeId.LAIR)
             else:
-                saving_money = True
+                save_for_tech(bot, AbilityId.UPGRADETOLAIR_LAIR)
     else:
         await try_build_tech(bot, UnitTypeId.SPAWNINGPOOL)
 
@@ -61,7 +87,7 @@ async def tech_hive(bot: BotAI):
                     if bot.can_afford(UnitTypeId.HIVE):
                         lair.train(UnitTypeId.HIVE)
                     else:
-                        saving_money = True
+                        save_for_tech(bot, AbilityId.UPGRADETOHIVE_HIVE)
             else:
                 await try_build_tech(bot, UnitTypeId.INFESTATIONPIT)
     else:
@@ -151,7 +177,7 @@ async def tech_broodlords(bot: BotAI):
                 if bot.can_afford(UnitTypeId.GREATERSPIRE):
                     idle_spires.first.train(UnitTypeId.GREATERSPIRE)
                 else:
-                    saving_money = True
+                    save_for_tech(bot, AbilityId.UPGRADETOGREATERSPIRE_GREATERSPIRE)
         else:
             await tech_hive(bot)
     else:

@@ -109,7 +109,8 @@ class EndGame(Strategy):
 
                 chosen_base = random.choice(target_bases)
                 unit.attack(chosen_base.position)
-                unit.attack(target_structures.closest_to(unit).position, queue=True)
+                if target_structures.amount > 0:
+                    unit.attack(target_structures.closest_to(unit).position, queue=True)
                 unit.attack(bot.enemy_start_locations[0].position, queue=True)
 
         # Get map control

@@ -51,27 +51,8 @@ class OpenPoolFirst(Strategy):
 
         # Then gas
         await economy.get_gas(bot, 1)
-        if economy.saving_money:
-            return # Save for gas
-
-        # Get 1 queen
-        queen_count = bot.all_own_units(UnitTypeId.QUEEN).amount + bot.already_pending(UnitTypeId.QUEEN)
-        if queen_count < 1 and bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount > 0:
-            if not bot.can_afford(UnitTypeId.QUEEN):
-                return # Save for queen
-            idle_townhalls = bot.townhalls.ready.idle
-            if idle_townhalls.amount > 0:
-                idle_townhalls.first.train(UnitTypeId.QUEEN)
-
-        # Then drone to 21
-        if bot.supply_used < 21:
-            if not bot.can_afford(UnitTypeId.DRONE):
-                return
-            bot.train(UnitTypeId.DRONE)
-        else:
-            if amount_of_type(bot, UnitTypeId.ZERGLING) == 0:
-                bot.train(UnitTypeId.ZERGLING)
-                self.is_finished = True
+        if bot.structures(UnitTypeId.EXTRACTOR).amount > 0:
+            self.is_finished = True
 
     def prefered_follow_up_strategy(self) -> Strategy:
         return EarlyLingPush()

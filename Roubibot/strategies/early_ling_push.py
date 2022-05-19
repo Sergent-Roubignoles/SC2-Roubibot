@@ -37,6 +37,8 @@ class EarlyLingPush(Strategy):
                         await bot.chat_send("No enemy expansion detected yet: defend the base!")
                     break
 
+        economy.reset_saving()
+
         desired_techs = [economy.tech.tech_zerglings(bot, False)]
         await economy.execute_tech_coroutines(bot, desired_techs)
 
@@ -70,7 +72,8 @@ class EarlyLingPush(Strategy):
                 await economy.expand_eco(bot, 19, 1)
 
         await economy.expand_eco(bot, 35, 1)
-        bot.train(UnitTypeId.ZERGLING, int(bot.supply_left))
+        if not economy.saving_money and bot.can_afford(UnitTypeId.ZERGLING):
+            bot.train(UnitTypeId.ZERGLING, int(bot.supply_left))
 
         if bot.units(UnitTypeId.ZERGLING).amount > 6:
             if not self.aggression_detected:
