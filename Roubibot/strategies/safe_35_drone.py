@@ -12,7 +12,7 @@ def current_plus_pending_count(bot: BotAI, unit_id: UnitTypeId):
     return int(bot.units.of_type(unit_id).amount + bot.already_pending(unit_id))
 
 
-class EarlyLingPush(Strategy):
+class Safe35Drone(Strategy):
     aggression_detected = False
 
     async def on_step(self, bot: BotAI):

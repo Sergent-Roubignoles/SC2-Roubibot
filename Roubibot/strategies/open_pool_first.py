@@ -1,17 +1,22 @@
-from helpers import strategy_analyser, base_identifier
+from helpers import base_identifier
 from helpers.unit_selector import amount_of_type
 from macro import economy
 from sc2.bot_ai import BotAI
+from sc2.data import Race
 from sc2.ids.unit_typeid import UnitTypeId
-from .early_ling_push import EarlyLingPush
+from .ling_bane_2_base_all_in import LingBane2BaseAllIn
+from .safe_35_drone import Safe35Drone
 from .strategy import Strategy
 
 
 class OpenPoolFirst(Strategy):
-    finished = False
     scout_sent = False
+    bot = None
 
     async def on_step(self, bot: BotAI):
+        if self.bot is None:
+            self.bot = bot
+
         await bot.distribute_workers()
 
         # Train overlords
@@ -55,4 +60,6 @@ class OpenPoolFirst(Strategy):
             self.is_finished = True
 
     def prefered_follow_up_strategy(self) -> Strategy:
-        return EarlyLingPush()
+        if self.bot.enemy_race == Race.Protoss:
+            return LingBane2BaseAllIn()
+        return Safe35Drone()
