@@ -43,18 +43,21 @@ def inject_and_creep_spread(bot: BotAI, iteration: int):
 
     # Spread creep
     if iteration % 100 == 0:
-        borders_of_creep = []
+        tumor_target_locations = []
         for point in get_whole_map(bot):
             if is_border_of_creep(bot, point):
+                point_is_valid = True
                 for base_location in bot.expansion_locations_list: # Do not spread on base locations
                     if point.distance_to(base_location) < 8:
-                        continue
-                borders_of_creep.append(point)
-        random.shuffle(borders_of_creep)
+                        point_is_valid = False
+                        break
+                if point_is_valid:
+                    tumor_target_locations.append(point)
+        random.shuffle(tumor_target_locations)
 
         for queen in unreserved_queens.idle.filter(lambda unit: unit.energy >= 25):
-            while len(borders_of_creep) > 0:
-                target = borders_of_creep.pop()
+            while len(tumor_target_locations) > 0:
+                target = tumor_target_locations.pop()
                 target_is_safe = True
                 for structure in bot.enemy_structures: # Do not bring queens close to enemy base
                     if target.distance_to(structure) < 20:
@@ -66,9 +69,9 @@ def inject_and_creep_spread(bot: BotAI, iteration: int):
 
         tumors = bot.structures(UnitTypeId.CREEPTUMORBURROWED)
         for tumor in tumors:
-            if len(borders_of_creep) > 0:
-                for tile in borders_of_creep:
-                    if tumor.distance_to(tile) <= tumor.sight_range:
+            if len(tumor_target_locations) > 0:
+                for tile in tumor_target_locations:
+                    if tumor.distance_to(tile) <= 10:
                         tumor(AbilityId.BUILD_CREEPTUMOR_TUMOR, tile)
                         break
 

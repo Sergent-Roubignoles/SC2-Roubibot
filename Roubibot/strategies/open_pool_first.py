@@ -60,6 +60,6 @@ class OpenPoolFirst(Strategy):
             self.is_finished = True
 
     def prefered_follow_up_strategy(self) -> Strategy:
-        if self.bot.enemy_race == Race.Protoss:
-            return LingBane2BaseAllIn()
+        # if self.bot.enemy_race == Race.Protoss:
+        #     return LingBane2BaseAllIn()
         return Safe35Drone()

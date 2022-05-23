@@ -1,8 +1,8 @@
 import random
 from typing import List
-
+from sc2.unit import Unit
 from helpers import strategy_analyser, base_identifier
-from micro import queen_micro, base_defense_micro
+from micro import queen_micro, base_defense_micro, overlord_micro
 from sc2.bot_ai import BotAI
 from sc2.ids.ability_id import AbilityId
 from sc2.ids.unit_typeid import UnitTypeId
@@ -10,13 +10,15 @@ from sc2.position import Point2
 from strategies.open_pool_first import OpenPoolFirst
 
 
-class CompetitiveBot(BotAI):
+class Roubibot(BotAI):
 
     current_strategy = OpenPoolFirst()
 
     async def on_start(self):
         print("Game started")
         base_identifier.identify_bases(self)
+
+        overlord_micro.bot = self
 
     async def on_step(self, iteration):
         if iteration == 0:
@@ -35,12 +37,16 @@ class CompetitiveBot(BotAI):
             queen_micro.inject_and_creep_spread(self, iteration)
             move_scout(self)
             build_emergency_workers(self)
+            overlord_micro.overlord_routine()
 
     def on_end(self, result):
         print("Game ended.")
 
     async def on_unit_destroyed(self, unit_tag: int):
         strategy_analyser.on_unit_destroyed(unit_tag)
+
+    async def on_enemy_unit_entered_vision(self, unit: Unit):
+        await overlord_micro.verify_no_hidden_units(unit)
 
 scout_id: int = 0
 

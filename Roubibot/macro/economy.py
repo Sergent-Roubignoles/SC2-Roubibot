@@ -30,7 +30,7 @@ async def expand_eco(bot: BotAI, desired_workers: int, desired_gas: int):
     desired_mineral_fields = (desired_workers - 3 * desired_gas) / 2
     if len(exploitable_mineral_fields) < desired_mineral_fields:
         if not bot.already_pending(UnitTypeId.HATCHERY):
-            next_expansion = await bot.get_next_expansion()
+            next_expansion = await bot.get_next_expansion()  # TODO:Check for occupied locations
             if next_expansion is not None:
                 cost = bot.calculate_cost(UnitTypeId.HATCHERY)
                 if can_afford_while_saving(bot, cost):

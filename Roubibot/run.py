@@ -3,14 +3,14 @@ import sys
 from __init__ import run_ladder_game
 
 # Load bot
-from bot import CompetitiveBot
+from roubibot import Roubibot
 
 from sc2 import maps
 from sc2.data import Difficulty, Race
 from sc2.main import run_game
 from sc2.player import Bot, Computer
 
-bot = Bot(Race.Zerg, CompetitiveBot())
+bot = Bot(Race.Zerg, Roubibot())
 
 # Start game
 if __name__ == "__main__":
