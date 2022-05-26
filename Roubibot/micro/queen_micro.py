@@ -10,6 +10,7 @@ from sc2.ids.unit_typeid import UnitTypeId
 from sc2.position import Point2
 
 all_map_points = None
+base_queen_pairs = {}
 
 
 def inject_and_creep_spread(bot: BotAI, iteration: int):
@@ -17,14 +18,14 @@ def inject_and_creep_spread(bot: BotAI, iteration: int):
     if all_map_points is None:
         all_map_points = get_whole_map(bot)
 
-    unreserved_queens = bot.units(UnitTypeId.QUEEN)
+    assign_queens(bot)
 
-    # Keep 1 immobile queen for each hatch
-    for hatchery in bot.townhalls.ready:
-        reservable_queens = unreserved_queens.filter(lambda unit: not unit.is_moving).closer_than(5, hatchery)
-        if reservable_queens.amount > 0:
-            queen_to_reserve = reservable_queens.closest_to(hatchery)
-            unreserved_queens.remove(queen_to_reserve)
+    # # Keep 1 immobile queen for each hatch
+    # for hatchery in bot.townhalls.ready:
+    #     reservable_queens = unreserved_queens.filter(lambda unit: not unit.is_moving).closer_than(5, hatchery)
+    #     if reservable_queens.amount > 0:
+    #         queen_to_reserve = reservable_queens.closest_to(hatchery)
+    #         unreserved_queens.remove(queen_to_reserve)
 
     # Inject
     for hatchery in bot.townhalls.ready:
@@ -75,6 +76,30 @@ def inject_and_creep_spread(bot: BotAI, iteration: int):
                         tumor(AbilityId.BUILD_CREEPTUMOR_TUMOR, tile)
                         break
 
+def assign_queens(bot: BotAI):
+    global base_queen_pairs
+
+    # Delete dead bases
+    for registered_base_tag in base_queen_pairs.keys():
+        if registered_base_tag not in bot.structures.tags:
+            del base_queen_pairs[registered_base_tag]
+        else:
+            # Delete dead queens
+            if base_queen_pairs[registered_base_tag] not in bot.units.tags:
+                base_queen_pairs[registered_base_tag] = None
+
+    # Add new bases
+    for base in bot.townhalls:
+        if base.tag not in base_queen_pairs.keys():
+            base_queen_pairs[base.tag] = None
+
+    unreserved_queens = bot.units(UnitTypeId.QUEEN).filter(lambda unit: unit.tag not in base_queen_pairs.values())
+
+    # Add queens to bases
+    for registered_base_tag in base_queen_pairs.keys():
+        if unreserved_queens.amount > 0:
+            if base_queen_pairs[registered_base_tag] is None:
+                base_queen_pairs[registered_base_tag] = unreserved_queens.pop()
 
 def is_border_of_creep(bot: BotAI, position: Point2):
     if bot.has_creep(position):
