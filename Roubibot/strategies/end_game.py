@@ -118,8 +118,10 @@ class EndGame(Strategy):
             scouting_micro.secure_watchtowers(bot)
 
         # Move remaining units to staging point
-        staging_point = bot.townhalls.ready.closest_to(bot.enemy_start_locations[0]).position.towards(
-            bot.game_info.map_center, 2)
-        for unit in army.idle:
-            if unit.distance_to(staging_point) > 10:
-                unit.move(staging_point)
+        possible_staging_points = bot.townhalls.ready
+        if possible_staging_points.amount > 0:
+            staging_point = possible_staging_points.closest_to(bot.enemy_start_locations[0]).position.towards(
+                bot.game_info.map_center, 2)
+            for unit in army.idle:
+                if unit.distance_to(staging_point) > 10:
+                    unit.move(staging_point)

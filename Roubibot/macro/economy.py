@@ -139,7 +139,8 @@ async def expand_army(bot: BotAI):
 
     # Zerglings
     if not saving_money or bot.minerals > 400:
-        bot.train(UnitTypeId.ZERGLING)
+        if bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount > 0:
+            bot.train(UnitTypeId.ZERGLING)
 
 async def execute_tech_coroutines(bot: BotAI, techs: List[Coroutine]):
     tech.saving_money = False
