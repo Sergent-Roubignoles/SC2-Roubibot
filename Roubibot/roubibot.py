@@ -33,7 +33,7 @@ class Roubibot(BotAI):
                 await self.chat_send("New strategy: " + self.current_strategy.__class__.__name__)
             await self.current_strategy.on_step(self)
 
-            base_defense_micro.emergency_response(self)
+            base_defense_micro.drone_self_defense(self)
             queen_micro.inject_and_creep_spread(self, iteration)
             move_scout(self)
             build_emergency_workers(self)

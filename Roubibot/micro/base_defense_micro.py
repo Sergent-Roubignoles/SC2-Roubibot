@@ -2,42 +2,25 @@ from sc2.bot_ai import BotAI
 from sc2.ids.unit_typeid import UnitTypeId
 
 
-def emergency_response(bot: BotAI):
-    threats = []
-    for enemy in bot.enemy_units:
-        if enemy.is_attacking:
-            threats.append(enemy)
-            continue
-        for base in bot.townhalls:
-            if base.health_percentage < 1:
-                if enemy.distance_to(base) < 20:
-                    threats.append(enemy)
-                    break
+def drone_self_defense(bot: BotAI):
+    ground_threats = bot.enemy_units.filter(lambda enemy: not enemy.is_flying)
+    air_threats = bot.enemy_units.filter(lambda enemy: enemy.is_flying)
 
-    if len(threats) == 0:
-        return
+    if ground_threats.amount > 0:
+        for drone in bot.workers:
+            closest_threat = ground_threats.closest_to(drone)
 
-    for unit in bot.units.exclude_type(UnitTypeId.OVERLORD):
-        if not unit.is_attacking:
-            if unit.type_id == UnitTypeId.DRONE:
-                for enemy in threats:
-                    if unit.distance_to(enemy) < 5:
-                        unit.attack(enemy.position)
-                        break
-            elif unit.type_id == UnitTypeId.QUEEN:
-                for enemy in threats:
-                    if unit.distance_to(enemy) < 20:
-                        unit.attack(enemy.position)
-                        break
+            # Can threat can attack drone?
+            if closest_threat.distance_to(drone) < closest_threat.ground_range:
+                # Attack only if threat is close to a base
+                townhalls = bot.townhalls
+                if townhalls.amount > 0:
+                    closest_townhall = townhalls.closest_to(drone)
+                    if closest_threat.distance_to(closest_townhall) > 12:
+                        # Prevent drone from chasing threat
+                        drone.move(closest_townhall.position)
+                        continue
+
+                drone.attack(closest_threat.position)
             else:
-                closest_enemy = threats[0]
-                for enemy in threats:
-                    if enemy.distance_to(unit) < closest_enemy.distance_to(unit):
-                        closest_enemy = enemy
-                unit.attack(closest_enemy.position)
-        else:
-            if unit.type_id == UnitTypeId.DRONE:
-                # Prevent drones form chasing enemies
-                closest_townhall = bot.townhalls.closest_to(unit)
-                if closest_townhall.distance_to(unit) > 15:
-                    unit.move(closest_townhall)
+                continue # Drones should only attack units that are threatening them
