@@ -97,6 +97,13 @@ async def expand_army(bot: BotAI):
 
     global saving_money
 
+    # # Queens
+    # if not saving_money and bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount > 0:
+    #     if bot.can_afford(UnitTypeId.QUEEN):
+    #         idle_hatcheries = bot.structures(UnitTypeId.HATCHERY).idle
+    #         if idle_hatcheries.amount > 0:
+    #             idle_hatcheries.first.train(UnitTypeId.QUEEN)
+
     # Ultralisks
     if not saving_money and bot.structures(UnitTypeId.ULTRALISKCAVERN).ready.amount > 0:
         ultralisks = bot.units(UnitTypeId.ULTRALISK).amount + bot.already_pending(UnitTypeId.ULTRALISK)

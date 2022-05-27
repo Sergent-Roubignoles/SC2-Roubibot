@@ -19,6 +19,7 @@ class Roubibot(BotAI):
         base_identifier.identify_bases(self)
 
         overlord_micro.bot = self
+        queen_micro.bot = self
 
     async def on_step(self, iteration):
         if iteration == 0:
@@ -34,9 +35,10 @@ class Roubibot(BotAI):
             await self.current_strategy.on_step(self)
 
             base_defense_micro.drone_self_defense(self)
-            queen_micro.inject_and_creep_spread(self, iteration)
             move_scout(self)
             build_emergency_workers(self)
+
+            queen_micro.queen_routine(iteration)
             overlord_micro.overlord_routine()
 
     def on_end(self, result):
