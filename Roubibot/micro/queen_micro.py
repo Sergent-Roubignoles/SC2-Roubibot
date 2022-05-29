@@ -101,21 +101,21 @@ def find_tumor_points():
                 tumor_points.append(point)
 
     # Draw tumor points
-    bool_map = [[0 for y in range(map_area.height)] for x in range(map_area.width)]
-    for point in all_map_points:
-        bool_map[point.x - map_area.x][point.y - map_area.y] = 1
-    for point in tumor_points:
-        bool_map[point.x - map_area.x][point.y - map_area.y] = 10
-    color_map.color_map(bool_map)
+    # bool_map = [[0 for y in range(map_area.height)] for x in range(map_area.width)]
+    # for point in all_map_points:
+    #     bool_map[point.x - map_area.x][point.y - map_area.y] = 1
+    # for point in tumor_points:
+    #     bool_map[point.x - map_area.x][point.y - map_area.y] = 10
+    # color_map.color_map(bool_map)
 
 async def spread_creep(iteration: int):
-    find_tumor_points()
-    placable_tumor_points = []
-    for point in tumor_points:
-        if bot.has_creep(point) and bot.in_placement_grid(point):
-            placable_tumor_points.append(point)
+    if iteration % 10 == 0:
+        find_tumor_points()
+        placable_tumor_points = []
+        for point in tumor_points:
+            if bot.has_creep(point) and bot.in_placement_grid(point):
+                placable_tumor_points.append(point)
 
-    if iteration % 50 == 0:
         for queen in bot.units(UnitTypeId.QUEEN):
             if queen.tag not in base_queen_pairs.values() and queen.is_idle and queen.energy >= 25:
                 # Find all valid points close to queen

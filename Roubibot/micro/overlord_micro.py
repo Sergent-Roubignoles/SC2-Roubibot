@@ -21,6 +21,7 @@ def overlord_routine():
     create_overseers()
     micro_overseers()
     micro_changelings()
+    place_overlords()
 
 def create_overseers():
     if enemy_uses_hidden_units:
@@ -46,3 +47,41 @@ def micro_changelings():
     for changeling in bot.units(UnitTypeId.CHANGELING):
         if changeling.is_idle:
             changeling.move(bot.enemy_start_locations[0])
+
+our_expansion_locations = []
+def find_our_expansion_locations():
+    if len(our_expansion_locations) > 0:
+        return
+    for base in bot.expansion_locations_list:
+        if bot.start_location.distance_to(base) < bot.enemy_start_locations[0].distance_to(base):
+            our_expansion_locations.append(base)
+
+position_overlord_pairs = {}
+def place_overlords():
+    find_our_expansion_locations()
+    for point in our_expansion_locations:
+        if point not in position_overlord_pairs.keys():
+            position_overlord_pairs[point] = None
+
+    overlords = bot.units(UnitTypeId.OVERLORD)
+
+    # Find free overlords
+    free_overlords = []
+    for overlord in overlords:
+        if overlord.tag not in position_overlord_pairs.values():
+            free_overlords.append(overlord)
+        if bot.structures({UnitTypeId.LAIR, UnitTypeId.HIVE}).amount > 0:
+            overlord(AbilityId.BEHAVIOR_GENERATECREEPON)
+
+    for position in position_overlord_pairs.keys():
+        if position_overlord_pairs[position] is None:
+            # Add new overlord
+            if len(free_overlords) > 0:
+                overlord_to_assign = free_overlords.pop()
+                overlord_to_assign.move(position)
+                overlord_to_assign.hold_position(True)
+                position_overlord_pairs[position] = overlord_to_assign.tag
+        else:
+            if position_overlord_pairs[position] not in overlords.tags:
+                # Remove dead overlord
+                position_overlord_pairs[position] = None
