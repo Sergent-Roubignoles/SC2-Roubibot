@@ -38,7 +38,7 @@ class Roubibot(BotAI):
             move_scout(self)
             build_emergency_workers(self)
 
-            queen_micro.queen_routine(iteration)
+            await queen_micro.queen_routine(iteration)
             overlord_micro.overlord_routine()
 
     def on_end(self, result):
