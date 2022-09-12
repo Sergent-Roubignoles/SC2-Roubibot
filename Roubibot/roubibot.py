@@ -1,8 +1,10 @@
 import random
 from typing import List
+
+from routines import routine_manager
 from sc2.unit import Unit
 from helpers import strategy_analyser, base_identifier
-from micro import queen_micro, base_defense_micro, overlord_micro
+from micro import queen_micro, overlord_micro
 from sc2.bot_ai import BotAI
 from sc2.ids.ability_id import AbilityId
 from sc2.ids.unit_typeid import UnitTypeId
@@ -21,6 +23,8 @@ class Roubibot(BotAI):
         overlord_micro.bot = self
         queen_micro.bot = self
 
+        routine_manager.bot = self
+
     async def on_step(self, iteration):
         if iteration == 0:
             await self.chat_send("glhf")
@@ -34,12 +38,13 @@ class Roubibot(BotAI):
                 await self.chat_send("New strategy: " + self.current_strategy.__class__.__name__)
             await self.current_strategy.on_step(self)
 
-            base_defense_micro.drone_self_defense(self)
             move_scout(self)
             build_emergency_workers(self)
 
             await queen_micro.queen_routine(iteration)
             overlord_micro.overlord_routine()
+
+            routine_manager.execute_routines()
 
     def on_end(self, result):
         print("Game ended.")
