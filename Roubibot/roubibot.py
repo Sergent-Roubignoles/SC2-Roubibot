@@ -1,3 +1,6 @@
+import io
+import json
+import os.path
 import random
 from typing import List
 
@@ -9,12 +12,15 @@ from sc2.bot_ai import BotAI
 from sc2.ids.ability_id import AbilityId
 from sc2.ids.unit_typeid import UnitTypeId
 from sc2.position import Point2
+from strategies import strategy
 from strategies.open_pool_first import OpenPoolFirst
 
+data_path = "data\opponents.json"
 
 class Roubibot(BotAI):
 
     current_strategy = OpenPoolFirst()
+    opening_strategy: strategy
 
     async def on_start(self):
         print("Game started")
@@ -24,6 +30,20 @@ class Roubibot(BotAI):
         queen_micro.bot = self
 
         routine_manager.bot = self
+
+        if os.path.isfile(data_path):
+            data: dict
+            with open(data_path) as json_file:
+                data = json.load(json_file)
+
+            if "opponent history" in data.keys():
+                if self.opponent_id in data["opponent history"].keys():
+                    if "12pool" in data["opponent history"][self.opponent_id].keys():
+                        if "Defeat" in data["opponent history"][self.opponent_id]["12pool"]:
+                            self.current_strategy = OpenPoolFirst()
+
+        self.opening_strategy = self.current_strategy
+
 
     async def on_step(self, iteration):
         if iteration == 0:
@@ -48,6 +68,39 @@ class Roubibot(BotAI):
 
     def on_end(self, result):
         print("Game ended.")
+
+        # if self.opponent_id is None:
+        #     self.opponent_id = "noId"
+
+        if not os.path.isfile(data_path):
+            with io.open(data_path, 'w') as json_file:
+                json_file.write(json.dumps({}))
+
+        data: dict
+        with open(data_path) as json_file:
+            data = json.load(json_file)
+
+        if "opponent history" not in data.keys():
+            data["opponent history"] = {}
+
+        opponent_history: dict = data["opponent history"]
+        opponent_id = self.opponent_id
+        if opponent_id not in opponent_history.keys():
+            opponent_history[opponent_id] = {}
+
+        strategy_history: dict = opponent_history[opponent_id]
+        strategy_name = self.opening_strategy.__class__.__name__
+        if strategy_name not in strategy_history.keys():
+            strategy_history[strategy_name] = {}
+
+        result_history = strategy_history[strategy_name]
+        if result.name not in result_history.keys():
+            result_history[result.name] = 1
+        else:
+            result_history[result.name] = result_history[result.name] + 1
+
+        with io.open(data_path, 'w') as json_file:
+            json.dump(data, json_file, sort_keys=True, indent=4)
 
     async def on_unit_destroyed(self, unit_tag: int):
         strategy_analyser.on_unit_destroyed(unit_tag)

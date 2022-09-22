@@ -48,5 +48,5 @@ def secure_watchtowers(bot: BotAI):
 
 def move_overlords(bot: BotAI):
     for base_location in bot.expansion_locations_list:
-        # TODO
+        # TODO: Position overlords
         pass
