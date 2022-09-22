@@ -22,4 +22,4 @@ if __name__ == "__main__":
     else:
         # Local game
         print("Starting local game...")
-        run_game(maps.get("HardwireAIE"), [bot, Computer(Race.Zerg, Difficulty.VeryHard)], realtime=False)
+        run_game(maps.get("WaterfallAIE"), [bot, Computer(Race.Terran, Difficulty.VeryHard)], realtime=False)
