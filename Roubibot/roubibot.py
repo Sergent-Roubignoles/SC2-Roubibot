@@ -14,12 +14,13 @@ from sc2.ids.unit_typeid import UnitTypeId
 from sc2.position import Point2
 from strategies import strategy
 from strategies.open_pool_first import OpenPoolFirst
+from strategies.twelve_pool import TwelvePool
 
-data_path = "data\opponents.json"
+data_path = "data\\opponents.json"
 
 class Roubibot(BotAI):
 
-    current_strategy = OpenPoolFirst()
+    current_strategy = TwelvePool()
     opening_strategy: strategy
 
     async def on_start(self):
@@ -31,6 +32,9 @@ class Roubibot(BotAI):
 
         routine_manager.bot = self
 
+        if self.opponent_id is None:
+            self.opponent_id = "Unknown"
+
         if os.path.isfile(data_path):
             data: dict
             with open(data_path) as json_file:
@@ -38,8 +42,8 @@ class Roubibot(BotAI):
 
             if "opponent history" in data.keys():
                 if self.opponent_id in data["opponent history"].keys():
-                    if "12pool" in data["opponent history"][self.opponent_id].keys():
-                        if "Defeat" in data["opponent history"][self.opponent_id]["12pool"]:
+                    if TwelvePool.__name__ in data["opponent history"][self.opponent_id].keys():
+                        if "Defeat" in data["opponent history"][self.opponent_id][TwelvePool.__name__]:
                             self.current_strategy = OpenPoolFirst()
 
         self.opening_strategy = self.current_strategy
@@ -69,9 +73,6 @@ class Roubibot(BotAI):
     def on_end(self, result):
         print("Game ended.")
 
-        # if self.opponent_id is None:
-        #     self.opponent_id = "noId"
-
         if not os.path.isfile(data_path):
             with io.open(data_path, 'w') as json_file:
                 json_file.write(json.dumps({}))
@@ -100,7 +101,7 @@ class Roubibot(BotAI):
             result_history[result.name] = result_history[result.name] + 1
 
         with io.open(data_path, 'w') as json_file:
-            json.dump(data, json_file, sort_keys=True, indent=4)
+            json.dump(data, json_file, indent=4)
 
     async def on_unit_destroyed(self, unit_tag: int):
         strategy_analyser.on_unit_destroyed(unit_tag)

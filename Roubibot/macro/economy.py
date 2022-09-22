@@ -91,7 +91,11 @@ async def get_gas(bot: BotAI, desired_gas: int):
                 saving_money = True
                 return # Save for extractor
 
-async def expand_army(bot: BotAI):
+async def expand_army(bot: BotAI, max_army_supply = None):
+    if max_army_supply is not None:
+        if bot.supply_army >= max_army_supply:
+            return
+
     if bot.supply_used == 200:
         return
 
@@ -145,9 +149,8 @@ async def expand_army(bot: BotAI):
             bot.train(UnitTypeId.ROACH)
 
     # Zerglings
-    if not saving_money or bot.minerals > 400:
-        if bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount > 0:
-            bot.train(UnitTypeId.ZERGLING)
+    if can_afford_unit_while_saving(bot, UnitTypeId.ZERGLING) and bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount > 0:
+        bot.train(UnitTypeId.ZERGLING)
 
 async def execute_tech_coroutines(bot: BotAI, techs: List[Coroutine]):
     tech.saving_money = False
@@ -168,3 +171,6 @@ def can_afford_while_saving(bot: BotAI, cost: Cost):
         saving_money = True
         return False
     return True
+
+def can_afford_unit_while_saving(bot: BotAI, unit: UnitTypeId):
+    return can_afford_while_saving(bot, bot.calculate_cost(unit))

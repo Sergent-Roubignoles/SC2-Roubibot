@@ -59,7 +59,7 @@ class EndGame(Strategy):
                 return
             bot.train(UnitTypeId.OVERLORD)
 
-        # Spend money
+        # Determine desired gas/tech
         economy.reset_saving()
         desired_techs = [economy.tech.tech_zerglings(bot)]
 
@@ -86,12 +86,12 @@ class EndGame(Strategy):
 
         await economy.execute_tech_coroutines(bot, desired_techs)
 
-        # Keep minimum army
-        if bot.supply_army * 2 < bot.supply_workers:
-            await economy.expand_army(bot)
-
+        await economy.expand_army(bot, bot.supply_workers / 2) # Keep minimum army
         await economy.expand_eco(bot, self.workers_desired, self.gas_desired)
-        await economy.expand_army(bot)
+
+        if bot.supply_workers >= self.workers_desired:
+            await economy.expand_army(bot) # Spend everything on army
+
 
         # Attack if army large enough
         army = bot.units.of_type(
