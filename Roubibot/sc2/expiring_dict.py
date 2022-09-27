@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from collections import OrderedDict
 from threading import RLock
-from typing import TYPE_CHECKING, Any, Iterable, Union
+from typing import TYPE_CHECKING, Iterable, Union
 
 if TYPE_CHECKING:
     from sc2.bot_ai import BotAI
@@ -28,8 +26,7 @@ class ExpiringDict(OrderedDict):
                 if "test" not in my_dict:
                     print("test is not anymore in dict")
     """
-
-    def __init__(self, bot: BotAI, max_age_frames: int = 1):
+    def __init__(self, bot: "BotAI", max_age_frames: int = 1):
         assert max_age_frames >= -1
         assert bot
 
@@ -50,19 +47,24 @@ class ExpiringDict(OrderedDict):
                 item = OrderedDict.__getitem__(self, key)
                 if self.frame - item[1] < self.max_age:
                     return True
-                del self[key]
+                else:
+                    del self[key]
         return False
 
-    def __getitem__(self, key, with_age=False) -> Any:
+    def __getitem__(self, key, with_age=False) -> any:
         """ Return the item of the dict using d[key] """
         with self.lock:
-            # Each item is a list of [value, frame time]
-            item = OrderedDict.__getitem__(self, key)
-            if self.frame - item[1] < self.max_age:
-                if with_age:
-                    return item[0], item[1]
-                return item[0]
-            OrderedDict.__delitem__(self, key)
+            try:
+                # Each item is a list of [value, frame time]
+                item = OrderedDict.__getitem__(self, key)
+                if self.frame - item[1] < self.max_age:
+                    if with_age:
+                        return item[0], item[1]
+                    return item[0]
+                else:
+                    del self[key]
+            except:
+                pass
         raise KeyError(key)
 
     def __setitem__(self, key, value):
@@ -76,7 +78,10 @@ class ExpiringDict(OrderedDict):
         with self.lock:
             for key, value in OrderedDict.items(self):
                 if self.frame - value[1] < self.max_age:
-                    print_list.append(f"{repr(key)}: {repr(value)}")
+                    try:
+                        print_list.append(f"{repr(key)}: {repr(value)}")
+                    except:
+                        print_list.append(f"{key}: {value}")
         print_str = ", ".join(print_list)
         return f"ExpiringDict({print_str})"
 
@@ -111,7 +116,7 @@ class ExpiringDict(OrderedDict):
                 del self[key]
             if default is None:
                 raise KeyError(key)
-            if with_age:
+            elif with_age:
                 return default, self.frame
             return default
 
@@ -126,10 +131,9 @@ class ExpiringDict(OrderedDict):
                     return item[0]
             if default is None:
                 raise KeyError(key)
-            if with_age:
+            elif with_age:
                 return default, self.frame
-            return None
-        return None
+            return
 
     def update(self, other_dict: dict):
         with self.lock:

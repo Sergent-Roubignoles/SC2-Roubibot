@@ -26,7 +26,10 @@ UNIT_TRAINED_FROM: Dict[UnitTypeId, Set[UnitTypeId]] = {
     UnitTypeId.COMMANDCENTER: {UnitTypeId.SCV},
     UnitTypeId.CORRUPTOR: {UnitTypeId.LARVA},
     UnitTypeId.CREEPTUMOR: {
-        UnitTypeId.CREEPTUMOR, UnitTypeId.CREEPTUMORBURROWED, UnitTypeId.CREEPTUMORQUEEN, UnitTypeId.QUEEN
+        UnitTypeId.CREEPTUMOR,
+        UnitTypeId.CREEPTUMORBURROWED,
+        UnitTypeId.CREEPTUMORQUEEN,
+        UnitTypeId.QUEEN,
     },
     UnitTypeId.CREEPTUMORQUEEN: {UnitTypeId.QUEEN},
     UnitTypeId.CYBERNETICSCORE: {UnitTypeId.PROBE},
@@ -117,5 +120,5 @@ UNIT_TRAINED_FROM: Dict[UnitTypeId, Set[UnitTypeId]] = {
     UnitTypeId.WARPPRISM: {UnitTypeId.ROBOTICSFACILITY},
     UnitTypeId.WIDOWMINE: {UnitTypeId.FACTORY},
     UnitTypeId.ZEALOT: {UnitTypeId.GATEWAY, UnitTypeId.WARPGATE},
-    UnitTypeId.ZERGLING: {UnitTypeId.LARVA}
+    UnitTypeId.ZERGLING: {UnitTypeId.LARVA},
 }

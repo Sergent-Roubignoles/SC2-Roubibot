@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from sc2.unit_command import UnitCommand
 
 
-# pylint: disable=R0912
 def combine_actions(action_iter):
     """
     Example input:

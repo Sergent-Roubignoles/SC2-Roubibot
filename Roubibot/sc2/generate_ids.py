@@ -1,4 +1,3 @@
-# pylint: disable=W0212
 import importlib
 import json
 import platform
@@ -9,7 +8,6 @@ from pathlib import Path
 from loguru import logger
 
 from sc2.game_data import AbilityData, GameData, UnitTypeData, UpgradeData
-from sc2.ids.ability_id import AbilityId
 
 try:
     from sc2.ids.id_version import ID_VERSION_STRING
@@ -18,7 +16,6 @@ except ImportError:
 
 
 class IdGenerator:
-
     def __init__(self, game_data: GameData = None, game_version: str = None, verbose: bool = False):
         self.game_data: GameData = game_data
         self.game_version = game_version
@@ -51,8 +48,7 @@ class IdGenerator:
             "Effects": "effect_id",
         }
 
-    @staticmethod
-    def make_key(key):
+    def make_key(self, key):
         if key[0].isdigit():
             key = "_" + key
         # In patch 5.0, the key has "@" character in it which is not possible with python enums
@@ -79,7 +75,7 @@ class IdGenerator:
                 if v["friendlyname"] != "":
                     key = v["friendlyname"]
                 else:
-                    sys.exit(f"Not mapped: {v !r}")
+                    exit(f"Not mapped: {v !r}")
 
             key = key.upper().replace(" ", "_").replace("@", "")
 
@@ -93,11 +89,11 @@ class IdGenerator:
                 key = "_" + key
 
             if key in abilities and v["index"] == 0:
-                logger.info(f"{key} has value 0 and id {v['id']}, overwriting {key}: {abilities[key]}")
+                print(f"{key} has value 0 and id {v['id']}, overwriting {key}: {abilities[key]}")
                 # Commented out to try to fix: 3670 is not a valid AbilityId
                 abilities[key] = v["id"]
             elif key in abilities:
-                logger.info(f"{key} has appeared a second time with id={v['id']}")
+                print(f"{key} has appeared a second time with id={v['id']}")
             else:
                 abilities[key] = v["id"]
 
@@ -157,7 +153,7 @@ class IdGenerator:
                 "\n",
                 f"for item in {class_name}:",
                 # f"    assert not item.name in globals()",
-                "    globals()[item.name] = item",
+                f"    globals()[item.name] = item",
                 "",
             ]
 
@@ -167,10 +163,10 @@ class IdGenerator:
 
             # Apply formatting]
             try:
-                subprocess.run(["poetry", "run", "yapf", ids_file_path, "-i"], check=True)
+                subprocess.run(["black", "--line-length", "120", ids_file_path])
             except FileNotFoundError:
-                logger.info(
-                    f"Yapf is not installed. Please use 'pip install yapf' to install yapf formatter.\nCould not autoformat file {ids_file_path}"
+                print(
+                    f"Black is not installed. Please use 'pip install black' to install black formatter.\nCould not autoformat file {ids_file_path}"
                 )
 
         if self.game_version is not None:
@@ -184,22 +180,21 @@ class IdGenerator:
                 logger.info(
                     f"Game version is different (Old: {self.game_version}, new: {ID_VERSION_STRING}. Updating ids to match game version"
                 )
-            stable_id_path = Path(self.DATA_JSON[self.PF])
-            assert stable_id_path.is_file(), f"stable_id.json was not found at path \"{stable_id_path}\""
-            with stable_id_path.open(encoding="utf-8") as data_file:
+            with open(self.DATA_JSON[self.PF], encoding="utf-8") as data_file:
                 data = json.loads(data_file.read())
-            self.generate_python_code(self.parse_data(data))
+                self.generate_python_code(self.parse_data(data))
 
             # Update game_data if this is a live game
             if self.game_data is not None:
                 self.reimport_ids()
                 self.update_game_data()
 
-    @staticmethod
-    def reimport_ids():
+    def reimport_ids(self):
 
         # Reload the newly written "id" files
         # TODO This only re-imports modules, but if they haven't been imported, it will yield an error
+        from sc2.ids.ability_id import AbilityId
+
         importlib.reload(sys.modules["sc2.ids.ability_id"])
 
         importlib.reload(sys.modules["sc2.ids.unit_typeid"])
@@ -217,6 +212,8 @@ class IdGenerator:
     def update_game_data(self):
         """Re-generate the dicts from self.game_data.
         This should be done after the ids have been reimported."""
+        from sc2.ids.ability_id import AbilityId
+
         ids = set(a.value for a in AbilityId if a.value != 0)
         self.game_data.abilities = {
             a.ability_id: AbilityData(self.game_data, a)
@@ -230,6 +227,7 @@ class IdGenerator:
             for u in self.game_data._proto.units if u.available
         }
         self.game_data.upgrades = {u.upgrade_id: UpgradeData(self.game_data, u) for u in self.game_data._proto.upgrades}
+        self.game_data.unit_types = {}
 
 
 if __name__ == "__main__":

@@ -7,7 +7,6 @@ import subprocess
 import sys
 import tempfile
 import time
-from contextlib import suppress
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import aiohttp
@@ -32,8 +31,7 @@ class kill_switch:
     def kill_all(cls):
         logger.info(f"kill_switch: Process cleanup for {len(cls._to_kill)} processes")
         for p in cls._to_kill:
-            # pylint: disable=W0212
-            p._clean(verbose=False)
+            p._clean()
 
 
 class SC2Process:
@@ -51,7 +49,6 @@ class SC2Process:
     :param base_build:
     :param data_hash:
     """
-
     def __init__(
         self,
         host: Optional[str] = None,
@@ -96,7 +93,7 @@ class SC2Process:
     async def __aenter__(self) -> Controller:
         kill_switch.add(self)
 
-        def signal_handler(*_args):
+        def signal_handler(*args):
             # unused arguments: signal handling library expects all signal
             # callback handlers to accept two positional arguments
             kill_switch.kill_all()
@@ -134,7 +131,6 @@ class SC2Process:
         for version in self.versions:
             if version["label"] == target_sc2_version:
                 return version["data-hash"]
-        return None
 
     def _launch(self):
         if self._base_build:
@@ -190,7 +186,7 @@ class SC2Process:
 
         sc2_cwd = str(Paths.CWD) if Paths.CWD else None
 
-        if paths.PF in {"WSL1", "WSL2"}:
+        if paths.PF == "WSL1" or paths.PF == "WSL2":
             return wsl.run(args, sc2_cwd)
 
         return subprocess.Popen(
@@ -236,13 +232,11 @@ class SC2Process:
         if self._session is not None:
             await self._session.close()
 
-    # pylint: disable=R0912
-    def _clean(self, verbose=True):
-        if verbose:
-            logger.info("Cleaning up...")
+    def _clean(self):
+        logger.info("Cleaning up...")
 
         if self._process is not None:
-            if paths.PF in {"WSL1", "WSL2"}:
+            if paths.PF == "WSL1" or paths.PF == "WSL2":
                 if wsl.kill(self._process):
                     logger.error("KILLED")
             elif self._process.poll() is None:
@@ -256,11 +250,13 @@ class SC2Process:
                 self._process.wait()
                 logger.error("KILLED")
             # Try to kill wineserver on linux
-            if paths.PF in {"Linux", "WineLinux"}:
+            if paths.PF == "Linux" or paths.PF == "WineLinux":
+                try:
+                    p = subprocess.Popen(["wineserver", "-k"])
+                    p.wait()
                 # Command wineserver not detected
-                with suppress(FileNotFoundError):
-                    with subprocess.Popen(["wineserver", "-k"]) as p:
-                        p.wait()
+                except FileNotFoundError:
+                    pass
 
         if os.path.exists(self._tmp_dir):
             shutil.rmtree(self._tmp_dir)
@@ -270,5 +266,4 @@ class SC2Process:
         if self._used_portpicker and self._port is not None:
             portpicker.return_port(self._port)
             self._port = None
-        if verbose:
-            logger.info("Cleanup complete")
+        logger.info("Cleanup complete")

@@ -1,4 +1,3 @@
-# pylint: disable=W0212
 import asyncio
 import os
 import platform
@@ -20,7 +19,6 @@ class Proxy:
     Class for handling communication between sc2 and an external bot.
     This "middleman" is needed for enforcing time limits, collecting results, and closing things properly.
     """
-
     def __init__(
         self,
         controller: Controller,
@@ -57,8 +55,6 @@ class Proxy:
             request.join_game.player_name = self.player.name
         await self.controller._ws.send_bytes(request.SerializeToString())
 
-    # TODO Catching too general exception Exception (broad-except)
-    # pylint: disable=W0703
     async def get_response(self):
         response_bytes = None
         try:
@@ -74,9 +70,11 @@ class Proxy:
                 if response_bytes is None:
                     response_bytes = x
             except (asyncio.CancelledError, asyncio.TimeoutError, Exception) as e:
-                logger.exception(f"Exception {e}")
+                tb = traceback.format_exc()
+                logger.error(f"Exception {e}: {tb}")
         except Exception as e:
-            logger.exception(f"Caught unknown exception: {e}")
+            tb = traceback.format_exc()
+            logger.error(f"Exception {e}: {tb}")
         return response_bytes
 
     async def parse_response(self, response_bytes):
@@ -106,7 +104,7 @@ class Proxy:
                 ):
                     self.result = {i: Result.Tie for i in range(1, 3)}
                     logger.info(f"Proxy({self.player.name}) timing out")
-                    act = [sc_pb.Action(action_chat=sc_pb.ActionChat(message="Proxy: Timing out"))]
+                    act = [sc_pb.Action(action_chat=sc_pb.ActionChat(message=f"Proxy: Timing out"))]
                     await self.controller._execute(action=sc_pb.RequestAction(actions=act))
         return response
 
@@ -117,10 +115,9 @@ class Proxy:
                 res = await self.controller._execute(observation=sc_pb.RequestObservation())
                 if res.HasField("observation") and res.observation.player_result:
                     self.result = {pr.player_id: Result(pr.result) for pr in res.observation.player_result}
-        # pylint: disable=W0703
-        # TODO Catching too general exception Exception (broad-except)
         except Exception as e:
-            logger.exception(f"Caught unknown exception: {e}")
+            tb = traceback.format_exc()
+            logger.error(f"Obs-check: {e}, traceback: {tb}")
 
     async def proxy_handler(self, request):
         bot_ws = web.WebSocketResponse(receive_timeout=30)
@@ -144,12 +141,9 @@ class Proxy:
                     logger.error("Client shutdown")
                 else:
                     logger.error("Incorrect message type")
-        # pylint: disable=W0703
-        # TODO Catching too general exception Exception (broad-except)
         except Exception as e:
-            logger.exception(f"Caught unknown exception: {e}")
-            ignored_errors = {ConnectionError, asyncio.CancelledError}
-            if not any(isinstance(e, E) for E in ignored_errors):
+            IGNORED_ERRORS = {ConnectionError, asyncio.CancelledError}
+            if not any([isinstance(e, E) for E in IGNORED_ERRORS]):
                 tb = traceback.format_exc()
                 logger.info(f"Proxy({self.player.name}): Caught {e} traceback: {tb}")
         finally:
@@ -157,14 +151,12 @@ class Proxy:
                 if self.controller._status in {Status.in_game, Status.in_replay}:
                     await self.controller._execute(leave_game=sc_pb.RequestLeaveGame())
                 await bot_ws.close()
-            # pylint: disable=W0703
-            # TODO Catching too general exception Exception (broad-except)
-            except Exception as e:
-                logger.exception(f"Caught unknown exception during surrender: {e}")
+            except Exception as ee:
+                tbb = traceback.format_exc()
+                logger.info(f"Proxy({self.player.name}): Caught during Surrender", ee, "traceback:", tbb)
             self.done = True
         return bot_ws
 
-    # pylint: disable=R0912
     async def play_with_proxy(self, startport):
         logger.info(f"Proxy({self.port}): Starting app")
         app = web.Application()
@@ -205,7 +197,7 @@ class Proxy:
 
         # cleanup
         logger.info(f"({self.port}): cleaning up {self.player !r}")
-        for _i in range(3):
+        for i in range(3):
             if isinstance(bot_process, subprocess.Popen):
                 if bot_process.stdout and not bot_process.stdout.closed:  # should not run anymore
                     logger.info(f"==================output for player {self.player.name}")
@@ -223,11 +215,10 @@ class Proxy:
             bot_process.wait()
         try:
             await apprunner.cleanup()
-        # pylint: disable=W0703
-        # TODO Catching too general exception Exception (broad-except)
         except Exception as e:
-            logger.exception(f"Caught unknown exception during cleaning: {e}")
+            logger.error(f"cleaning error {e}")
         if isinstance(self.result, dict):
             self.result[None] = None
             return self.result[self.player_id]
-        return self.result
+        else:
+            return self.result
