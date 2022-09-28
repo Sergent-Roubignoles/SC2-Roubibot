@@ -89,8 +89,10 @@ class EndGame(Strategy):
         await economy.expand_army(bot, bot.supply_workers / 2) # Keep minimum army
         await economy.expand_eco(bot, self.workers_desired, self.gas_desired)
 
-        if bot.supply_workers >= self.workers_desired:
-            await economy.expand_army(bot) # Spend everything on army
+        # if bot.supply_workers >= self.workers_desired:
+        #     await economy.expand_army(bot) # Spend everything on army
+
+        await economy.expand_army(bot) # Spend everything on army
 
 
         # Attack if army large enough

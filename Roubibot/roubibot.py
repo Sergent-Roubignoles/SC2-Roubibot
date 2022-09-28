@@ -16,7 +16,7 @@ from strategies import strategy
 from strategies.open_pool_first import OpenPoolFirst
 from strategies.twelve_pool import TwelvePool
 
-data_path = "data\\opponents.json"
+data_path = "Data\\opponents.json"
 
 class Roubibot(BotAI):
 

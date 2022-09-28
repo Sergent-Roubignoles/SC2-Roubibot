@@ -20,28 +20,44 @@ async def expand_eco(bot: BotAI, desired_workers: int, desired_gas: int):
         saving_money = True
         return
 
-    # Build more hatcheries
-    exploitable_mineral_fields = []
-    for mineral_field in bot.mineral_field:
-        for hatchery in bot.townhalls.ready:
-            if mineral_field.distance_to(hatchery) < 10:
-                exploitable_mineral_fields.append(mineral_field)
+    # Count active and max workers
+    gas_workers = 0
+    for extractor in bot.gas_buildings:
+        gas_workers += extractor.assigned_harvesters
+    max_gas_workers = bot.gas_buildings.amount * 3
 
-    desired_mineral_fields = (desired_workers - 3 * desired_gas) / 2
-    if len(exploitable_mineral_fields) < desired_mineral_fields:
-        if not bot.already_pending(UnitTypeId.HATCHERY):
-            next_expansion = await bot.get_next_expansion()  # TODO:Check for occupied locations
-            if next_expansion is not None:
-                cost = bot.calculate_cost(UnitTypeId.HATCHERY)
-                if can_afford_while_saving(bot, cost):
-                    await bot.build(UnitTypeId.HATCHERY, next_expansion)
-                else:
-                    saving_money = True
-                    return # Save for hatchery
+    mineral_workers = bot.supply_workers - gas_workers
+    max_mineral_workers = 0
+    for hatchery in bot.townhalls:
+        max_mineral_workers += hatchery.ideal_harvesters
+
+    max_total_workers = max_mineral_workers + max_gas_workers
+
+    # # Build more hatcheries
+    # exploitable_mineral_fields = []
+    # for mineral_field in bot.mineral_field:
+    #     for hatchery in bot.townhalls.ready:
+    #         if mineral_field.distance_to(hatchery) < 10:
+    #             exploitable_mineral_fields.append(mineral_field)
+    #             break
+
+    if mineral_workers >= max_mineral_workers:
+        # Expand if desired
+        desired_mineral_workers = desired_workers - 3 * desired_gas
+        if max_mineral_workers < desired_mineral_workers or (max_mineral_workers < desired_mineral_workers + 16 and bot.minerals > 500) :
+            if not bot.already_pending(UnitTypeId.HATCHERY):
+                next_expansion = await bot.get_next_expansion()  # TODO:Check for occupied locations
+                if next_expansion is not None:
+                    cost = bot.calculate_cost(UnitTypeId.HATCHERY)
+                    if can_afford_while_saving(bot, cost):
+                        await bot.build(UnitTypeId.HATCHERY, next_expansion)
+                    else:
+                        saving_money = True
+                        return # Save for hatchery
 
     # Build minimum queens
     current_queens = bot.units(UnitTypeId.QUEEN).amount + bot.already_pending(UnitTypeId.QUEEN)
-    desired_queens = bot.townhalls.amount * 1.5
+    desired_queens = bot.townhalls.amount + 1
     if current_queens < desired_queens:
         if bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount == 0:
             await tech.tech_zerglings(bot)
@@ -56,20 +72,20 @@ async def expand_eco(bot: BotAI, desired_workers: int, desired_gas: int):
 
     # Build more drones
     current_workers = int(bot.supply_workers + bot.already_pending(UnitTypeId.DRONE))
-    if current_workers < desired_workers:
+    if current_workers < max_total_workers:
         cost = bot.calculate_cost(UnitTypeId.DRONE)
         if can_afford_while_saving(bot, cost):
             bot.train(UnitTypeId.DRONE)
 
-    # Get 1 extra hatchery if floating minerals
-    if bot.minerals > 400 and not bot.already_pending(UnitTypeId.HATCHERY):
-        extra_mineral_fields = desired_mineral_fields - len(exploitable_mineral_fields)
-        if not extra_mineral_fields >= 8:
-            next_expansion = await bot.get_next_expansion()
-            if next_expansion is not None:
-                cost = bot.calculate_cost(UnitTypeId.HATCHERY)
-                if can_afford_while_saving(bot, cost):
-                    await bot.build(UnitTypeId.HATCHERY, next_expansion)
+    # # Get 1 extra hatchery if floating minerals
+    # if bot.minerals > 400 and not bot.already_pending(UnitTypeId.HATCHERY):
+    #     extra_mineral_fields = desired_mineral_fields - len(exploitable_mineral_fields)
+    #     if not extra_mineral_fields >= 8:
+    #         next_expansion = await bot.get_next_expansion()
+    #         if next_expansion is not None:
+    #             cost = bot.calculate_cost(UnitTypeId.HATCHERY)
+    #             if can_afford_while_saving(bot, cost):
+    #                 await bot.build(UnitTypeId.HATCHERY, next_expansion)
 
 async def get_gas(bot: BotAI, desired_gas: int):
     global saving_money
@@ -149,7 +165,7 @@ async def expand_army(bot: BotAI, max_army_supply = None):
             bot.train(UnitTypeId.ROACH)
 
     # Zerglings
-    if can_afford_unit_while_saving(bot, UnitTypeId.ZERGLING) and bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount > 0:
+    if not saving_money and can_afford_unit_while_saving(bot, UnitTypeId.ZERGLING) and bot.structures(UnitTypeId.SPAWNINGPOOL).ready.amount > 0:
         bot.train(UnitTypeId.ZERGLING)
 
 async def execute_tech_coroutines(bot: BotAI, techs: List[Coroutine]):
@@ -165,12 +181,18 @@ def reset_saving():
     tech.reset_amount_to_save()
 
 def can_afford_while_saving(bot: BotAI, cost: Cost):
-    extra_minerals = bot.minerals - tech.minerals_to_save
-    if extra_minerals < cost.minerals:
-        global saving_money
-        saving_money = True
-        return False
-    return True
+    max_saving = min(tech.minerals_to_save, tech.gas_to_save)
+
+    extra_minerals = max(bot.minerals - max_saving, 0)
+    extra_gas = max(bot.vespene - max_saving, 0)
+
+    # if extra_minerals < cost.minerals:
+    #     global saving_money
+    #     saving_money = True
+    #     return False
+    # return True
+
+    return cost.minerals <= extra_minerals and cost.vespene <= extra_gas
 
 def can_afford_unit_while_saving(bot: BotAI, unit: UnitTypeId):
     return can_afford_while_saving(bot, bot.calculate_cost(unit))
