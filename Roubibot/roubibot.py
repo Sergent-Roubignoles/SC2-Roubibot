@@ -36,15 +36,17 @@ class Roubibot(BotAI):
             self.opponent_id = "Unknown"
 
         if os.path.isfile(data_path):
-            data: dict
-            with open(data_path) as json_file:
-                data = json.load(json_file)
+            try:
+                with open(data_path) as json_file:
+                    data = json.load(json_file)
 
-            if "opponent history" in data.keys():
-                if self.opponent_id in data["opponent history"].keys():
-                    if TwelvePool.__name__ in data["opponent history"][self.opponent_id].keys():
-                        if "Defeat" in data["opponent history"][self.opponent_id][TwelvePool.__name__]:
-                            self.current_strategy = OpenPoolFirst()
+                if "opponent history" in data.keys():
+                    if self.opponent_id in data["opponent history"].keys():
+                        if TwelvePool.__name__ in data["opponent history"][self.opponent_id].keys():
+                            if "Defeat" in data["opponent history"][self.opponent_id][TwelvePool.__name__]:
+                                self.current_strategy = OpenPoolFirst()
+            except IOError as e:
+                print("Error while reading previous strategies - " + e.errno + " : " + e)
 
         self.opening_strategy = self.current_strategy
 
@@ -75,8 +77,11 @@ class Roubibot(BotAI):
                 json_file.write(json.dumps({}))
 
         data: dict
-        with open(data_path) as json_file:
-            data = json.load(json_file)
+        try:
+            with open(data_path) as json_file:
+                data = json.load(json_file)
+        except IOError as e:
+            print("Error while loading match history - " + e.errno + " : " + e)
 
         if "opponent history" not in data.keys():
             data["opponent history"] = {}
@@ -97,8 +102,11 @@ class Roubibot(BotAI):
         else:
             result_history[result.name] = result_history[result.name] + 1
 
-        with io.open(data_path, 'w') as json_file:
-            json.dump(data, json_file, indent=4)
+        try:
+            with io.open(data_path, 'w') as json_file:
+                json.dump(data, json_file, indent=4)
+        except IOError as e:
+            print("Error while writing match results - " + e.errno + " : " + e)
 
     async def on_unit_destroyed(self, unit_tag: int):
         strategy_analyser.on_unit_destroyed(unit_tag)
