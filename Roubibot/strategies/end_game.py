@@ -27,7 +27,6 @@ class EndGame(Strategy):
     army_to_push = 80
 
     first_push_done = False
-    current_attack_group: AttackGroup = None
 
     banelings_desired = False
     roaches_desired = False

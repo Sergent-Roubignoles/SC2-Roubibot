@@ -1,4 +1,7 @@
 from macro import economy
+from micro.army_group import AttackGroup
+from micro.groups.ling_flood import LingFlood
+from routines import army_group_routine
 from sc2.ids.unit_typeid import UnitTypeId
 from sc2.bot_ai import BotAI
 from strategies.safe_35_drone import Safe35Drone
@@ -37,8 +40,12 @@ class TwelvePool(Strategy):
                         larva.train(UnitTypeId.ZERGLING)
                 else:
                     # Attack
-                    for unit in zerglings:
-                        unit.attack(bot.enemy_start_locations[0])
+                    zergling_group: LingFlood = LingFlood()
+                    for zergling in zerglings:
+                        zergling_group.attacker_tags.append(zergling.tag)
+                    zergling_group.target = bot.enemy_start_locations[0]
+
+                    army_group_routine.army_groups.append(zergling_group)
                     self.is_finished = True
 
                 # Queen if floating

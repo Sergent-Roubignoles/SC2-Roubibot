@@ -35,18 +35,18 @@ class Roubibot(BotAI):
         if self.opponent_id is None:
             self.opponent_id = "Unknown"
 
-        if os.path.isfile(data_path):
-            try:
-                with open(data_path) as json_file:
-                    data = json.load(json_file)
-
-                if "opponent history" in data.keys():
-                    if self.opponent_id in data["opponent history"].keys():
-                        if TwelvePool.__name__ in data["opponent history"][self.opponent_id].keys():
-                            if "Defeat" in data["opponent history"][self.opponent_id][TwelvePool.__name__]:
-                                self.current_strategy = OpenPoolFirst()
-            except IOError as e:
-                print("Error while reading previous strategies - " + e.errno + " : " + e)
+        # if os.path.isfile(data_path):
+        #     try:
+        #         with open(data_path) as json_file:
+        #             data = json.load(json_file)
+        #
+        #         if "opponent history" in data.keys():
+        #             if self.opponent_id in data["opponent history"].keys():
+        #                 if TwelvePool.__name__ in data["opponent history"][self.opponent_id].keys():
+        #                     if "Defeat" in data["opponent history"][self.opponent_id][TwelvePool.__name__]:
+        #                         self.current_strategy = OpenPoolFirst()
+        #     except IOError as e:
+        #         print("Error while reading previous strategies - " + e.errno + " : " + e)
 
         self.opening_strategy = self.current_strategy
 

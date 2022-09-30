@@ -1,6 +1,6 @@
 from typing import List, Coroutine
 
-from routines import drone_routine
+from routines import drone_routine, army_group_routine
 
 from sc2.unit import Unit
 from sc2.position import Point2
@@ -16,3 +16,4 @@ def execute_routines():
 
     # Main routines
     drone_routine.execute()
+    army_group_routine.execute()
