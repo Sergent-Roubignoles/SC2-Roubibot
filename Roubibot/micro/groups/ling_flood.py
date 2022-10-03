@@ -1,31 +1,49 @@
 from micro.army_group import AttackGroup
 from routines import routine_manager
 from sc2.ids.unit_typeid import UnitTypeId
+from unit import Unit
 
-enemies_tags_seen: [int] = []
 
 class LingFlood(AttackGroup):
+    ling_tags_with_orders: [int]
+    #enemy_ling_dict = {}
+
     def attack(self):
-        enemy_units = routine_manager.bot.enemy_units.filter(lambda unit: unit.type_id not in {UnitTypeId.DRONE, UnitTypeId.SCV, UnitTypeId.PROBE})
+        # TODO: Declare these lists as empty, then add each unit as they are filtered
+        enemy_units = routine_manager.bot.enemy_units.filter(lambda unit: unit.type_id not in {UnitTypeId.DRONE, UnitTypeId.SCV, UnitTypeId.PROBE} and not unit.is_flying)
         enemy_structures = routine_manager.bot.enemy_structures
         enemy_workers = routine_manager.bot.enemy_units.filter(lambda unit: unit.type_id not in {UnitTypeId.DRONE, UnitTypeId.SCV, UnitTypeId.PROBE})
 
-        # TODO: Declare empty unit lists and add each unit as they are filtered
+        self.update_attacker_list()
 
-        for enemy in enemy_units:
-            if enemy.is_flying:
-                continue
+        enemy_dict = {}
+        for enemy in routine_manager.bot.all_enemy_units:
+            enemy_dict[enemy] = set()
 
-            closest_distance = self.attackers[0].distance_to(enemy)
-            for attacker in self.attackers:
-                distance = attacker.distance_to(enemy)
-                if distance < closest_distance:
-                    closest_distance = distance
+        for ling in self.attackers:
+            target: Unit = None
+            if isinstance(ling.order_target, int):
+                try:
+                    target = routine_manager.bot.all_units.by_tag(ling.order_target)
+                    enemy_dict[target].add(ling)
+                except KeyError:
+                    pass
+            # Maybe find new target
 
-            if closest_distance < 15:
-                enemy_value = routine_manager.bot.calculate_cost(enemy.type_id)
-                lings_to_assign = (enemy_value.minerals + enemy_value.vespene) / 25 + 1
+        lings_without_orders: [Unit] = []
+        for ling in self.attackers:
+            if not ling.is_attacking:
+                lings_without_orders.append(ling)
 
-                # TODO: Assign attackers to this unit
-
-        # TODO: Assign remaining lings to attack workers
+        if len(lings_without_orders) > 0:
+            for ling in lings_without_orders:
+                if enemy_units.amount > 0:
+                    # Kill army
+                    ling.attack(enemy_units.closest_to(ling))
+                    continue
+                if enemy_workers.amount > 0:
+                    # Kill workers
+                    ling.attack(enemy_workers.closest_to(ling))
+                    continue
+                # Move to enemy main
+                ling.move(routine_manager.bot.enemy_start_locations[0])
