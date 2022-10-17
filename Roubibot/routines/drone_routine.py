@@ -26,12 +26,12 @@ def execute():
     for extractor in routine_manager.bot.gas_buildings.ready:
         workers_to_take = extractor.surplus_harvesters
         if workers_to_take > 0:
-            local_workers = routine_manager.bot.workers.filter(
+            workers_assigned_to_extractor = routine_manager.bot.workers.filter(
                 lambda unit: unit.order_target == extractor.tag or
                              (unit.is_carrying_vespene and unit.order_target == routine_manager.bot.townhalls.closest_to(extractor).tag)
             )
-            while workers_to_take > 0:
-                unused_drones.append(local_workers.pop())
+            while workers_to_take > 0 and workers_assigned_to_extractor.amount > 0:
+                unused_drones.append(workers_assigned_to_extractor.pop())
                 workers_to_take -= 1
 
     # TODO: Add unused drones to undersaturated gas
